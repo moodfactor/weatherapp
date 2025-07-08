@@ -95,7 +95,10 @@ class HomeView extends GetView<HomeController> {
                       ),
                       itemCount: 3,
                       itemBuilder: (context, itemIndex, pageViewIndex) {
-                        return WeatherCard(weather: controller.currentWeather);
+                        final weather = controller.weatherCards[itemIndex];
+                        return weather == null
+                            ? Center(child: CircularProgressIndicator())
+                            : WeatherCard(weather: weather, cardIndex: itemIndex);
                       },
                     ).animate().fade().slideY(
                       duration: 300.ms,
@@ -136,6 +139,7 @@ class HomeView extends GetView<HomeController> {
                     separatorBuilder: (context, index) => 16.verticalSpace,
                     itemBuilder: (context, index) => WeatherCard(
                       weather: controller.weatherArroundTheWorld[index],
+                      cardIndex: index + 3,
                     ).animate(delay: (100 * index).ms).fade().slideY(
                       duration: 300.ms,
                       begin: 1,

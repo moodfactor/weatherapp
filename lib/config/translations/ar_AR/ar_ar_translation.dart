@@ -54,4 +54,6 @@ final Map<String, String> arAR = {
   Strings.southeast : 'جنوبية شرقية',
   Strings.southwest : 'جنوبية غربية',
   Strings.northwest : 'شمالية غربية', 
+
+  Strings.enterCityName : 'أدخل اسم المدينة',
 };

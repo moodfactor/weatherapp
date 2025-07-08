@@ -54,4 +54,6 @@ const Map<String, String> enUs = {
   Strings.southeast : 'Southeast',
   Strings.southwest : 'Southwest',
   Strings.northwest : 'Northwest',
+
+  Strings.enterCityName : 'Enter city name',
 };

@@ -52,4 +52,6 @@ class Strings {
   static const String southeast = 'southeast';
   static const String southwest = 'southwest';
   static const String northwest = 'northwest';
+
+  static const String enterCityName = 'enterCityName';
 }

@@ -9,6 +9,7 @@ import '../../../services/api_call_status.dart';
 import '../../../services/base_client.dart';
 import '../../../services/location_service.dart';
 import '../views/widgets/location_dialog.dart';
+import '../views/widgets/change_city_dialog.dart';
 
 class HomeController extends GetxController {
   static HomeController get instance => Get.find();
@@ -18,6 +19,9 @@ class HomeController extends GetxController {
 
   // hold current weather data
   late WeatherModel currentWeather;
+
+  // hold the weather for the three cards
+  List<WeatherModel?> weatherCards = List.filled(3, null);
 
   // hold the weather arround the world
   List<WeatherModel> weatherArroundTheWorld = [];
@@ -42,6 +46,8 @@ class HomeController extends GetxController {
     } else {
       getUserLocation();
     }
+    getCurrentWeather('London', 1);
+    getCurrentWeather('Cairo', 2);
     super.onInit();
   }
 
@@ -49,12 +55,12 @@ class HomeController extends GetxController {
   getUserLocation() async {
     var locationData = await LocationService().getUserLocation();
     if (locationData != null) {
-      await getCurrentWeather('${locationData.latitude},${locationData.longitude}');
+      await getCurrentWeather('${locationData.latitude},${locationData.longitude}', 0);
     }
   }
   
   /// get home screem data (sliders, brands, and cars)
-  getCurrentWeather(String location) async {
+  getCurrentWeather(String location, int cardIndex) async {
     await BaseClient.safeApiCall(
       Constants.currentWeatherApiUrl,
       RequestType.get,
@@ -64,8 +70,25 @@ class HomeController extends GetxController {
         Constants.lang: currentLanguage,
       },
       onSuccess: (response) async {
-        currentWeather = WeatherModel.fromJson(response.data);
-        await getWeatherArroundTheWorld();
+        if (cardIndex < 3) {
+          weatherCards[cardIndex] = WeatherModel.fromJson(response.data);
+          if (cardIndex == 0) {
+            currentWeather = weatherCards[0]!;
+            await getWeatherArroundTheWorld();
+          }
+        } else { // cardIndex >= 3
+          final int actualIndex = cardIndex - 3;
+          if (actualIndex >= 0 && actualIndex < weatherArroundTheWorld.length) {
+            // Update existing city
+            weatherArroundTheWorld[actualIndex] = WeatherModel.fromJson(response.data);
+          } else {
+            // This case should ideally not be reached if UI is built correctly.
+            // If it is, it means we're trying to update a non-existent "Around the World" card.
+            // For now, we'll add it to the end, but this might indicate a logic flaw elsewhere.
+            // A more robust solution might involve a different way to manage "Around the World" cities.
+            weatherArroundTheWorld.add(WeatherModel.fromJson(response.data));
+          }
+        }
         apiCallStatus = ApiCallStatus.success;
         update();
       },
@@ -105,6 +128,15 @@ class HomeController extends GetxController {
     update([dotIndicatorsId]);
   }
 
+  /// when the user wants to change the city of a card
+  changeCity(int cardIndex) {
+    Get.dialog(
+      ChangeCityDialog(
+        cardIndex: cardIndex,
+      ),
+    );
+  }
+
   /// when the user press on change theme icon
   onChangeThemePressed() {
     MyTheme.changeTheme();
@@ -119,5 +151,10 @@ class HomeController extends GetxController {
     apiCallStatus = ApiCallStatus.loading;
     update();
     await getUserLocation();
+    for (int i = 1; i < weatherCards.length; i++) {
+      if (weatherCards[i] != null) {
+        await getCurrentWeather(weatherCards[i]!.location!.name!, i);
+      }
+    }
   }
 }
