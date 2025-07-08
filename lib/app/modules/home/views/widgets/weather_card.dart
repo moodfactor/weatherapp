@@ -30,7 +30,14 @@ class WeatherCard extends StatelessWidget {
         height: 170.h,
         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
         decoration: BoxDecoration(
-          color: theme.primaryColor,
+          gradient: LinearGradient(
+            colors: [
+              theme.primaryColor,
+              theme.primaryColor.withAlpha((0.7 * 255).round()),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(30.r),
         ),
         child: Stack( // Added Stack
@@ -58,6 +65,7 @@ class WeatherCard extends StatelessWidget {
                         weather.location.name.toRightCity(),
                         style: theme.textTheme.displayMedium?.copyWith(
                           color: Colors.white,
+                          fontWeight: FontWeight.bold,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -103,13 +111,19 @@ class WeatherCard extends StatelessWidget {
               ],
             ),
             Positioned( // Added Positioned for IconButton
-              top: 0,
-              right: 0,
-              child: IconButton(
-                icon: Icon(Icons.calendar_today, color: Colors.white),
-                onPressed: () {
-                  Get.toNamed(Routes.WEATHER, arguments: weather);
-                },
+              top: 5.h, // Adjusted top padding
+              right: 5.w, // Adjusted right padding
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(50), // Semi-transparent background
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: Icon(Icons.calendar_today, color: Colors.white, size: 20.w), // Increased icon size
+                  onPressed: () {
+                    Get.toNamed(Routes.WEATHER, arguments: weather);
+                  },
+                ),
               ),
             ),
           ],
