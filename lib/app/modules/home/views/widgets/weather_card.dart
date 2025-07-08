@@ -21,9 +21,7 @@ class WeatherCard extends StatelessWidget {
     final theme = context.theme;
     return InkWell(
       onTap: () {
-        Get.dialog(
-          ChangeCityDialog(cardIndex: cardIndex),
-        );
+        Get.toNamed(Routes.WEATHER, arguments: weather);
       },
       borderRadius: BorderRadius.circular(30.r),
       child: Container(
@@ -123,7 +121,9 @@ class WeatherCard extends StatelessWidget {
                 child: IconButton(
                   icon: Icon(Icons.calendar_today, color: Colors.white, size: 20.w), // Increased icon size
                   onPressed: () {
-                    Get.toNamed(Routes.WEATHER, arguments: weather);
+                    Get.dialog(
+                      ChangeCityDialog(cardIndex: cardIndex),
+                    );
                   },
                 ),
               ),
