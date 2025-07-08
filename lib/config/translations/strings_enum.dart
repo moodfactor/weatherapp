@@ -54,4 +54,7 @@ class Strings {
   static const String northwest = 'northwest';
 
   static const String enterCityName = 'enterCityName';
+  static const String cityName = 'cityName';
+  static const String cancel = 'cancel';
+  static const String change = 'change';
 }

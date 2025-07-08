@@ -27,7 +27,7 @@ class WeatherCard extends StatelessWidget {
       },
       borderRadius: BorderRadius.circular(30.r),
       child: Container(
-        height: 170.h,
+        height: 190.h,
         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -51,26 +51,27 @@ class WeatherCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      10.verticalSpace,
+                      5.verticalSpace,
                       Text(
                         weather.location.country.toRightCountry(),
-                        style: theme.textTheme.displaySmall?.copyWith(
+                        style: theme.textTheme.headlineSmall?.copyWith(
                           color: Colors.white,
+                          fontWeight: FontWeight.w600,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      8.verticalSpace,
+                      4.verticalSpace,
                       Text(
                         weather.location.name.toRightCity(),
-                        style: theme.textTheme.displayMedium?.copyWith(
+                        style: theme.textTheme.headlineMedium?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      20.verticalSpace,
+                      10.verticalSpace,
                       Flexible(
                         child: Text(
                           weather.current.condition.text ?? '',
@@ -99,8 +100,9 @@ class WeatherCard extends StatelessWidget {
                       ),
                       Text(
                         '${weather.current.tempC.round()}${Strings.celsius.tr}',
-                        style: theme.textTheme.displaySmall?.copyWith(
+                        style: theme.textTheme.headlineLarge?.copyWith(
                           color: Colors.white,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
