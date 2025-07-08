@@ -41,14 +41,14 @@ class HomeView extends GetView<HomeController> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              Strings.helloAbdQader.tr,
-                              style: theme.textTheme.displayMedium,
-                            ),
-                            8.verticalSpace,
-                            Text(
-                              Strings.discoverTheWeather.tr,
-                              style: theme.textTheme.displayMedium,
+                            Obx(
+                              () => Text(
+                                controller.currentTime.value,
+                                style: theme.textTheme.displayMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 24.sp,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -85,12 +85,12 @@ class HomeView extends GetView<HomeController> {
                   ),
                   24.verticalSpace,
                   SizedBox(
-                    height: 170.h,
+                    height: 190.h,
                     child: CarouselSlider.builder(
                       options: CarouselOptions(
                         enableInfiniteScroll: false,
                         viewportFraction: 1.0,
-                        enlargeCenterPage: true,
+                        enlargeCenterPage: false,
                         onPageChanged: controller.onCardSlided,
                       ),
                       itemCount: 3,

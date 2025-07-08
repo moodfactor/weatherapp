@@ -69,7 +69,7 @@ class WeatherCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      10.verticalSpace,
+                      2.verticalSpace,
                       Flexible(
                         child: Text(
                           weather.current.condition.text ?? '',

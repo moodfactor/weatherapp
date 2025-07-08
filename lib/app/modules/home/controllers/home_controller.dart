@@ -1,4 +1,6 @@
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import 'dart:async';
 
 import '../../../../config/theme/my_theme.dart';
 import '../../../../config/translations/localization_service.dart';
@@ -16,6 +18,9 @@ class HomeController extends GetxController {
 
   // get the current language code
   var currentLanguage = LocalizationService.getCurrentLocal().languageCode;
+
+  // hold current time
+  var currentTime = ''.obs;
 
   // hold current weather data
   late WeatherModel currentWeather;
@@ -41,6 +46,8 @@ class HomeController extends GetxController {
 
   @override
   void onInit() async {
+    _updateTime();
+    Timer.periodic(1.seconds, (_) => _updateTime());
     if (!await LocationService().hasLocationPermission()) {
       Get.dialog(const LocationDialog());
     } else {
@@ -49,6 +56,10 @@ class HomeController extends GetxController {
     getCurrentWeather('London', 1);
     getCurrentWeather('Cairo', 2);
     super.onInit();
+  }
+
+  void _updateTime() {
+    currentTime.value = DateFormat('HH:mm:ss').format(DateTime.now());
   }
 
   /// get the user location
