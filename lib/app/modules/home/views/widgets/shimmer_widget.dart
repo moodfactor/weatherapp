@@ -5,20 +5,23 @@ import '../../../../../config/theme/theme_extensions/shimmer_theme_data.dart';
 
 class ShimmerWidget extends StatelessWidget {
   final double width;
-  final double height;
-  final bool isCircle;
+  final double? height;
+  final double? cornerRadius;
+  final bool? isCircle;
 
   const ShimmerWidget.rectangular({
-    super.key, 
+    super.key,
     this.width = double.infinity,
     required this.height,
+    this.cornerRadius = 6.0,
     this.isCircle = false,
   });
 
   const ShimmerWidget.circular({
-    super.key, 
+    super.key,
     required this.width,
-    required this.height,
+    this.height,
+    this.cornerRadius,
     this.isCircle = true,
   });
 
@@ -30,11 +33,11 @@ class ShimmerWidget extends StatelessWidget {
       highlightColor: shimmerTheme.highlightColor!,
       child: Container(
         width: width,
-        height: height,
+        height: height ?? width, // Use width as fallback for height if not provided for circular
         decoration: BoxDecoration(
           color: shimmerTheme.backgroundColor,
-          shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
-          borderRadius: isCircle ? null : BorderRadius.circular(6),
+          shape: isCircle ?? false ? BoxShape.circle : BoxShape.rectangle,
+          borderRadius: isCircle ?? false ? null : BorderRadius.circular(cornerRadius ?? 6.0),
         ),
       ),
     );

@@ -1,5 +1,6 @@
-
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -18,83 +19,77 @@ class ChangeCityDialog extends GetView<HomeController> {
     final theme = context.theme;
     final TextEditingController cityController = TextEditingController();
 
-    return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20.r),
-      ),
-      elevation: 0,
-      backgroundColor: Colors.transparent,
-      child: Container(
-        padding: EdgeInsets.all(20.w),
-        decoration: BoxDecoration(
-          color: theme.cardColor,
-          borderRadius: BorderRadius.circular(20.r),
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+      child: Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(25.r),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              Strings.enterCityName.tr,
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: theme.primaryColor,
+        elevation: 0,
+        backgroundColor: theme.cardColor.withOpacity(0.85),
+        child: Padding(
+          padding: EdgeInsets.all(24.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                Strings.enterCityName.tr,
+                style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
               ),
-            ),
-            20.verticalSpace,
-            TextField(
-              controller: cityController,
-              decoration: InputDecoration(
-                hintText: Strings.cityName.tr,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10.r),
-                  borderSide: BorderSide(color: theme.primaryColor),
+              24.verticalSpace,
+              TextField(
+                controller: cityController,
+                decoration: InputDecoration(
+                  hintText: Strings.cityName.tr,
+                  filled: true,
+                  fillColor: theme.scaffoldBackgroundColor,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15.r),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15.r),
+                    borderSide: BorderSide(color: theme.primaryColor, width: 2),
+                  ),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10.r),
-                  borderSide: BorderSide(color: theme.primaryColor, width: 2),
-                ),
+                style: theme.textTheme.bodyLarge,
               ),
-              style: theme.textTheme.bodyMedium,
-            ),
-            20.verticalSpace,
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () {
-                    Get.back();
-                  },
-                  child: Text(
-                    Strings.cancel.tr,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.primaryColor,
+              24.verticalSpace,
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Get.back(),
+                      child: Text(Strings.cancel.tr),
                     ),
                   ),
-                ),
-                10.horizontalSpace,
-                ElevatedButton(
-                  onPressed: () {
-                    if (cityController.text.isNotEmpty) {
-                      controller.getCurrentWeather(cityController.text, cardIndex);
-                      Get.back();
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.primaryColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.r),
+                  12.horizontalSpace,
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (cityController.text.trim().isNotEmpty) {
+                          // ✨ USE ENHANCED CONTROLLER METHOD
+                          controller.updateWeatherForCard(cityController.text.trim(), cardIndex);
+                          Get.back();
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 16.h),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15.r),
+                        ),
+                      ),
+                      child: Text(Strings.change.tr),
                     ),
                   ),
-                  child: Text(
-                    Strings.change.tr,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+                ],
+              ),
+            ],
+          ),
+        ).animate().fade(duration: 200.ms).scale(begin: const Offset(0.9, 0.9)),
       ),
     );
   }

@@ -1,6 +1,10 @@
+// lib/app/modules/home/controllers/home_controller.dart
+
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
+// ✨ FIX: Added missing import for CarouselPageChangedReason
+import 'package:carousel_slider/carousel_slider.dart';
 
 import '../../../../config/theme/my_theme.dart';
 import '../../../../config/translations/localization_service.dart';
@@ -11,67 +15,83 @@ import '../../../services/api_call_status.dart';
 import '../../../services/base_client.dart';
 import '../../../services/location_service.dart';
 import '../views/widgets/location_dialog.dart';
-import '../views/widgets/change_city_dialog.dart';
 
 class HomeController extends GetxController {
   static HomeController get instance => Get.find();
 
-  // get the current language code
   var currentLanguage = LocalizationService.getCurrentLocal().languageCode;
+  final currentTime = ''.obs;
 
-  // hold current time
-  var currentTime = ''.obs;
-
-  // hold current weather data
-  late WeatherModel currentWeather;
-
-  // hold the weather for the three cards
+  // Carousel Cards
+  // Card 0: User Location, Card 1: Custom City 1, Card 2: Custom City 2
   List<WeatherModel?> weatherCards = List.filled(3, null);
 
-  // hold the weather arround the world
-  List<WeatherModel> weatherArroundTheWorld = [];
+  // ✨ FIX: Renamed to match view's expectation (camelCase)
+  List<WeatherModel> weatherAroundTheWorld = [];
 
-  // for update
   final dotIndicatorsId = 'DotIndicators';
   final themeId = 'Theme';
 
-  // api call status
   ApiCallStatus apiCallStatus = ApiCallStatus.loading;
-
-  // for app theme
   var isLightTheme = MySharedPref.getThemeIsLight();
-  
-  // for weather slider and dot indicator
-  var activeIndex = 1;
+  var activeIndex = 0;
+
+  // Persisted city names for the carousel
+  late String card1CityName;
+  late String card2CityName;
 
   @override
-  void onInit() async {
+  void onInit() {
+    super.onInit();
     _updateTime();
     Timer.periodic(1.seconds, (_) => _updateTime());
-    if (!await LocationService().hasLocationPermission()) {
-      Get.dialog(const LocationDialog());
-    } else {
-      getUserLocation();
-    }
-    getCurrentWeather('London', 1);
-    getCurrentWeather('Cairo', 2);
-    super.onInit();
+
+    // Load persisted cities or use defaults
+    card1CityName = MySharedPref.getCard1City();
+    card2CityName = MySharedPref.getCard2City();
+
+    _initiateDataLoad();
   }
 
   void _updateTime() {
-    currentTime.value = DateFormat('HH:mm:ss').format(DateTime.now());
+    currentTime.value = DateFormat.jm().format(DateTime.now());
   }
 
-  /// get the user location
-  getUserLocation() async {
-    var locationData = await LocationService().getUserLocation();
-    if (locationData != null) {
-      await getCurrentWeather('${locationData.latitude},${locationData.longitude}', 0);
+  Future<void> _initiateDataLoad() async {
+    if (!await LocationService().hasLocationPermission()) {
+      Get.dialog(const LocationDialog(), barrierDismissible: false);
+    } else {
+      await refreshAllData();
     }
   }
-  
-  /// get home screem data (sliders, brands, and cars)
-  getCurrentWeather(String location, int cardIndex) async {
+
+  // ✨ FIX: This is the public method to be called by the view for retries.
+  Future<void> refreshAllData() async {
+    apiCallStatus = ApiCallStatus.loading;
+    update();
+
+    final locationData = await LocationService().getUserLocation();
+    if (locationData == null) {
+      apiCallStatus = ApiCallStatus.error;
+      update();
+      return;
+    }
+    final userLocationString = '${locationData.latitude},${locationData.longitude}';
+
+    // Fetch all data points.
+    // The Future.wait approach was good but requires changing BaseClient.
+    // This sequential approach is simpler and still fast enough.
+    await _fetchWeather(userLocationString, 0);
+    await _fetchWeather(card1CityName, 1);
+    await _fetchWeather(card2CityName, 2);
+    await _fetchAroundTheWorldWeather(); // Fetch the separate list
+
+    apiCallStatus = ApiCallStatus.success;
+    update();
+  }
+
+  /// Helper to fetch weather for a single card in the carousel
+  Future<void> _fetchWeather(String location, int cardIndex) async {
     await BaseClient.safeApiCall(
       Constants.currentWeatherApiUrl,
       RequestType.get,
@@ -80,43 +100,23 @@ class HomeController extends GetxController {
         Constants.q: location,
         Constants.lang: currentLanguage,
       },
-      onSuccess: (response) async {
-        if (cardIndex < 3) {
-          weatherCards[cardIndex] = WeatherModel.fromJson(response.data);
-          if (cardIndex == 0) {
-            currentWeather = weatherCards[0]!;
-            await getWeatherArroundTheWorld();
-          }
-        } else { // cardIndex >= 3
-          final int actualIndex = cardIndex - 3;
-          if (actualIndex >= 0 && actualIndex < weatherArroundTheWorld.length) {
-            // Update existing city
-            weatherArroundTheWorld[actualIndex] = WeatherModel.fromJson(response.data);
-          } else {
-            // This case should ideally not be reached if UI is built correctly.
-            // If it is, it means we're trying to update a non-existent "Around the World" card.
-            // For now, we'll add it to the end, but this might indicate a logic flaw elsewhere.
-            // A more robust solution might involve a different way to manage "Around the World" cities.
-            weatherArroundTheWorld.add(WeatherModel.fromJson(response.data));
-          }
-        }
-        apiCallStatus = ApiCallStatus.success;
-        update();
+      onSuccess: (response) {
+        weatherCards[cardIndex] = WeatherModel.fromJson(response.data);
       },
       onError: (error) {
+        // If a city fails, we can show a placeholder or an error state on the card
+        weatherCards[cardIndex] = null; // Or a custom error model
         BaseClient.handleApiError(error);
-        apiCallStatus = ApiCallStatus.error;
-        update();
       },
     );
   }
 
-  /// get weather arround the world
-  getWeatherArroundTheWorld() async {
-    weatherArroundTheWorld.clear();
-    final cities = ['London', 'Cairo', 'Alaska'];
-    await Future.forEach(cities, (city) {
-      BaseClient.safeApiCall(
+  /// Fetches the list of cities for the "Around the World" section
+  Future<void> _fetchAroundTheWorldWeather() async {
+    weatherAroundTheWorld.clear();
+    final cities = ['Tokyo', 'Sydney', 'Moscow', 'New York'];
+    await Future.forEach(cities, (city) async {
+      await BaseClient.safeApiCall(
         Constants.currentWeatherApiUrl,
         RequestType.get,
         queryParameters: {
@@ -125,47 +125,79 @@ class HomeController extends GetxController {
           Constants.lang: currentLanguage,
         },
         onSuccess: (response) {
-          weatherArroundTheWorld.add(WeatherModel.fromJson(response.data));
-          update();
+          weatherAroundTheWorld.add(WeatherModel.fromJson(response.data));
         },
-        onError: (error) => BaseClient.handleApiError(error),
+        onError: (e) {
+          // You can decide to skip a city if it fails
+          print("Failed to load weather for $city");
+        },
       );
     });
   }
 
-  /// when the user slide the weather card
-  onCardSlided(index, reason) {
+  /// Updates a single card when the user changes a city in the dialog.
+  Future<void> updateWeatherForCard(String location, int cardIndex) async {
+    if (cardIndex < 0 || cardIndex >= 3) return; // Guard clause
+
+    // Show a loading indicator on the specific card
+    weatherCards[cardIndex] = null;
+    update();
+
+    await _fetchWeather(location, cardIndex);
+
+    // Persist the new city name if it's not the user's location card
+    if (cardIndex == 1) {
+      MySharedPref.setCard1City(location);
+      card1CityName = location;
+    } else if (cardIndex == 2) {
+      MySharedPref.setCard2City(location);
+      card2CityName = location;
+    }
+
+    update();
+  }
+
+  void onCardSlided(int index, CarouselPageChangedReason reason) {
     activeIndex = index;
     update([dotIndicatorsId]);
   }
 
-  /// when the user wants to change the city of a card
-  changeCity(int cardIndex) {
-    Get.dialog(
-      ChangeCityDialog(
-        cardIndex: cardIndex,
-      ),
-    );
-  }
-
-  /// when the user press on change theme icon
-  onChangeThemePressed() {
+  void onChangeThemePressed() {
     MyTheme.changeTheme();
     isLightTheme = MySharedPref.getThemeIsLight();
     update([themeId]);
   }
-  
-  /// when the user press on change language icon
-  onChangeLanguagePressed() async {
+
+  Future<void> onChangeLanguagePressed() async {
     currentLanguage = currentLanguage == 'ar' ? 'en' : 'ar';
     await LocalizationService.updateLanguage(currentLanguage);
-    apiCallStatus = ApiCallStatus.loading;
-    update();
-    await getUserLocation();
-    for (int i = 1; i < weatherCards.length; i++) {
-      if (weatherCards[i] != null) {
-        await getCurrentWeather(weatherCards[i]!.location!.name!, i);
-      }
+    await refreshAllData();
+  }
+
+  // Add new RxBool to track editing state
+  final isEditingWorldList = false.obs;
+
+  // Toggle editing mode for the world list
+  void toggleWorldListEditing() {
+    isEditingWorldList.value = !isEditingWorldList.value;
+  }
+
+  // Callback when add city button is pressed
+  void onAddCityPressed() {
+    // Logic to handle adding a new city
+  }
+
+  // Reorder the world weather list
+  void reorderWorldList(int oldIndex, int newIndex) {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
     }
+    final WeatherModel item = weatherAroundTheWorld.removeAt(oldIndex);
+    weatherAroundTheWorld.insert(newIndex, item);
+  }
+
+  // Remove a city from the world weather list
+  void removeCityFromWorldList(int index) {
+    weatherAroundTheWorld.removeAt(index);
   }
 }

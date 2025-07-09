@@ -19,6 +19,19 @@ class MySharedPref {
     _sharedPreferences = await SharedPreferences.getInstance();
   }
 
+  // Key for storing the list of world cities
+static const String kWorldCities = 'world_cities';
+
+// Method to get the list of world cities. Defaults to a sample list if none exists.
+static List<String> getWorldCities() {
+  return _sharedPreferences.getStringList(kWorldCities) ?? ['Tokyo', 'New York', 'Sydney'];
+}
+
+// Method to save the list of world cities.
+static Future<void> setWorldCities(List<String> cities) async {
+  await _sharedPreferences.setStringList(kWorldCities, cities);
+}
+
   static setStorage(SharedPreferences sharedPreferences) {
     _sharedPreferences = sharedPreferences;
   }

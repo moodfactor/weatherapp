@@ -1,4 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import 'dart:async';
+import 'package:carousel_slider/carousel_slider.dart';
+import 'package:weatherapp/app/modules/home/views/widgets/add_city_dialog.dart';
 
 import '../../../../config/theme/my_theme.dart';
 import '../../../../config/translations/localization_service.dart';
@@ -13,111 +18,214 @@ import '../views/widgets/location_dialog.dart';
 class HomeController extends GetxController {
   static HomeController get instance => Get.find();
 
-  // get the current language code
   var currentLanguage = LocalizationService.getCurrentLocal().languageCode;
+  final currentTime = ''.obs;
 
-  // hold current weather data
-  late WeatherModel currentWeather;
+  // Carousel Cards
+  List<WeatherModel?> weatherCards = List.filled(3, null);
+  late String card1CityName;
+  late String card2CityName;
 
-  // hold the weather arround the world
-  List<WeatherModel> weatherArroundTheWorld = [];
+  // "Around the World" List - now fully dynamic
+  List<WeatherModel> weatherAroundTheWorld = [];
+  List<String> worldCityNames = [];
 
-  // for update
+  // State Management
   final dotIndicatorsId = 'DotIndicators';
   final themeId = 'Theme';
-
-  // api call status
   ApiCallStatus apiCallStatus = ApiCallStatus.loading;
-
-  // for app theme
   var isLightTheme = MySharedPref.getThemeIsLight();
-  
-  // for weather slider and dot indicator
-  var activeIndex = 1;
+  var activeIndex = 0;
+  RxBool isEditingWorldList = false.obs; // To toggle editing mode
 
   @override
-  void onInit() async {
-    if (!await LocationService().hasLocationPermission()) {
-      Get.dialog(const LocationDialog());
-    } else {
-      getUserLocation();
-    }
+  void onInit() {
     super.onInit();
+    _updateTime();
+    Timer.periodic(1.seconds, (_) => _updateTime());
+
+    // Load persisted cities
+    card1CityName = MySharedPref.getCard1City();
+    card2CityName = MySharedPref.getCard2City();
+    worldCityNames = MySharedPref.getWorldCities();
+
+    _initiateDataLoad();
   }
 
-  /// get the user location
-  getUserLocation() async {
-    var locationData = await LocationService().getUserLocation();
-    if (locationData != null) {
-      await getCurrentWeather('${locationData.latitude},${locationData.longitude}');
+  void _updateTime() {
+    currentTime.value = DateFormat.jm().format(DateTime.now());
+  }
+
+  Future<void> _initiateDataLoad() async {
+    if (!await LocationService().hasLocationPermission()) {
+      Get.dialog(const LocationDialog(), barrierDismissible: false);
+    } else {
+      await refreshAllData();
     }
   }
-  
-  /// get home screem data (sliders, brands, and cars)
-  getCurrentWeather(String location) async {
+
+  Future<void> refreshAllData() async {
+    apiCallStatus = ApiCallStatus.loading;
+    update();
+
+    final locationData = await LocationService().getUserLocation();
+    if (locationData == null) {
+      apiCallStatus = ApiCallStatus.error;
+      update();
+      return;
+    }
+    final userLocationString = '${locationData.latitude},${locationData.longitude}';
+
+    await _fetchWeather(userLocationString, 0);
+    await _fetchWeather(card1CityName, 1);
+    await _fetchWeather(card2CityName, 2);
+    await _fetchAroundTheWorldWeather();
+
+    apiCallStatus = ApiCallStatus.success;
+    update();
+  }
+
+  Future<void> _fetchWeather(String location, int cardIndex) async {
     await BaseClient.safeApiCall(
       Constants.currentWeatherApiUrl,
       RequestType.get,
       queryParameters: {
-        Constants.key: Constants.mApiKey,
+        Constants.key: Constants.apiKey,
         Constants.q: location,
         Constants.lang: currentLanguage,
       },
-      onSuccess: (response) async {
-        currentWeather = WeatherModel.fromJson(response.data);
-        await getWeatherArroundTheWorld();
-        apiCallStatus = ApiCallStatus.success;
-        update();
+      onSuccess: (response) {
+        weatherCards[cardIndex] = WeatherModel.fromJson(response.data);
       },
       onError: (error) {
+        weatherCards[cardIndex] = null;
         BaseClient.handleApiError(error);
-        apiCallStatus = ApiCallStatus.error;
-        update();
       },
     );
   }
 
-  /// get weather arround the world
-  getWeatherArroundTheWorld() async {
-    weatherArroundTheWorld.clear();
-    final cities = ['London', 'Cairo', 'Alaska'];
-    await Future.forEach(cities, (city) {
-      BaseClient.safeApiCall(
+  Future<void> _fetchAroundTheWorldWeather() async {
+    weatherAroundTheWorld.clear();
+    if (worldCityNames.isEmpty) return;
+
+    List<WeatherModel> fetchedWeather = [];
+    for (var city in worldCityNames) {
+      await BaseClient.safeApiCall(
         Constants.currentWeatherApiUrl,
         RequestType.get,
         queryParameters: {
-          Constants.key: Constants.mApiKey,
+          Constants.key: Constants.apiKey,
           Constants.q: city,
           Constants.lang: currentLanguage,
         },
         onSuccess: (response) {
-          weatherArroundTheWorld.add(WeatherModel.fromJson(response.data));
-          update();
+          fetchedWeather.add(WeatherModel.fromJson(response.data));
         },
-        onError: (error) => BaseClient.handleApiError(error),
       );
-    });
+    }
+    weatherAroundTheWorld = fetchedWeather;
   }
 
-  /// when the user slide the weather card
-  onCardSlided(index, reason) {
+  Future<void> updateWeatherForCard(String location, int cardIndex) async {
+    if (cardIndex <= 0 || cardIndex >= 3) return;
+
+    weatherCards[cardIndex] = null;
+    update();
+
+    await _fetchWeather(location, cardIndex);
+
+    if (cardIndex == 1) {
+      MySharedPref.setCard1City(location);
+      card1CityName = location;
+    } else if (cardIndex == 2) {
+      MySharedPref.setCard2City(location);
+      card2CityName = location;
+    }
+    update();
+  }
+
+  void onCardSlided(int index, CarouselPageChangedReason reason) {
     activeIndex = index;
     update([dotIndicatorsId]);
   }
 
-  /// when the user press on change theme icon
-  onChangeThemePressed() {
+  void onChangeThemePressed() {
     MyTheme.changeTheme();
     isLightTheme = MySharedPref.getThemeIsLight();
     update([themeId]);
   }
-  
-  /// when the user press on change language icon
-  onChangeLanguagePressed() async {
+
+  Future<void> onChangeLanguagePressed() async {
     currentLanguage = currentLanguage == 'ar' ? 'en' : 'ar';
     await LocalizationService.updateLanguage(currentLanguage);
-    apiCallStatus = ApiCallStatus.loading;
+    await refreshAllData();
+  }
+
+  // --- Methods for "Around the World" List Management ---
+
+  void toggleWorldListEditing() {
+    isEditingWorldList.value = !isEditingWorldList.value;
+  }
+
+  void onAddCityPressed() {
+    Get.dialog(const AddCityDialog());
+  }
+
+  Future<void> addCityToWorldList(String cityName) async {
+    final trimmedCity = cityName.trim();
+    if (trimmedCity.isEmpty || worldCityNames.any((c) => c.toLowerCase() == trimmedCity.toLowerCase())) {
+      Get.snackbar('Error', 'City name cannot be empty or a duplicate.',
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
+    worldCityNames.add(trimmedCity);
+    await MySharedPref.setWorldCities(worldCityNames);
+
+    await BaseClient.safeApiCall(
+      Constants.currentWeatherApiUrl,
+      RequestType.get,
+      queryParameters: {
+        Constants.key: Constants.apiKey,
+        Constants.q: trimmedCity,
+        Constants.lang: currentLanguage,
+      },
+      onSuccess: (response) {
+        weatherAroundTheWorld.add(WeatherModel.fromJson(response.data));
+        update();
+      },
+      onError: (e) {
+        // If adding fails, remove it back from the list
+        worldCityNames.remove(trimmedCity);
+        MySharedPref.setWorldCities(worldCityNames);
+        Get.snackbar('Error', 'Could not find weather for "$trimmedCity".',
+            snackPosition: SnackPosition.BOTTOM);
+      },
+    );
+  }
+
+  Future<void> removeCityFromWorldList(int index) async {
+    if (index < 0 || index >= worldCityNames.length) return;
+
+    worldCityNames.removeAt(index);
+    weatherAroundTheWorld.removeAt(index);
+    await MySharedPref.setWorldCities(worldCityNames);
     update();
-    await getUserLocation();
+  }
+
+  Future<void> reorderWorldList(int oldIndex, int newIndex) async {
+    // This correction is needed for ReorderableListView's logic
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+
+    final String city = worldCityNames.removeAt(oldIndex);
+    worldCityNames.insert(newIndex, city);
+
+    final WeatherModel weather = weatherAroundTheWorld.removeAt(oldIndex);
+    weatherAroundTheWorld.insert(newIndex, weather);
+
+    await MySharedPref.setWorldCities(worldCityNames);
+    update();
   }
 }

@@ -12,7 +12,7 @@ import '../../../components/api_error_widget.dart';
 import '../../../components/custom_icon_button.dart';
 import '../../../components/my_widgets_animator.dart';
 import '../controllers/home_controller.dart';
-import 'widgets/compact_weather_list_tile.dart'; // ✨ IMPORT new compact tile
+import 'widgets/compact_weather_list_tile.dart';
 import 'widgets/home_shimmer.dart';
 import 'widgets/weather_card.dart';
 
@@ -21,120 +21,179 @@ class HomeView extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // ✨ ENHANCEMENT: Use a CustomScrollView for more advanced scroll behaviors
-      body: SafeArea(
-        child: GetBuilder<HomeController>(
-          builder: (_) => MyWidgetsAnimator(
-            apiCallStatus: controller.apiCallStatus,
-            loadingWidget: () => const HomeShimmer(),
-            errorWidget: () => ApiErrorWidget(
-              retryAction: () => controller.getUserLocation(),
-            ),
-            successWidget: () => CustomScrollView(
-              slivers: [
-                // ✨ ENHANCEMENT: Pinned App Bar at the top
-                SliverPersistentHeader(
-                  delegate: _HomeAppBar(),
-                  pinned: true,
-                ),
+    final theme = context.theme;
 
-                // ✨ ENHANCEMENT: Sliver wrapper for the carousel
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16.w),
-                    child: Column(
-                      children: [
-                        24.verticalSpace,
-                        SizedBox(
-                          height: 190.h,
-                          child: CarouselSlider.builder(
-                            options: CarouselOptions(
-                              enableInfiniteScroll: false,
-                              viewportFraction: 1.0,
-                              enlargeCenterPage: false,
-                              onPageChanged: controller.onCardSlided,
-                            ),
-                            itemCount: 3,
-                            itemBuilder: (context, itemIndex, pageViewIndex) {
-                              final weather = controller.weatherCards[itemIndex];
-                              return weather == null
-                                ? const Center(child: CircularProgressIndicator())
-                                  // ✨ USE ENHANCED CARD: Pass showEditButton: true
-                                : WeatherCard(
-                                    weather: weather,
-                                    cardIndex: itemIndex,
-                                    showEditButton: true,
-                                  );
-                            },
-                          ).animate().fade(duration: 400.ms).slideY(
-                                duration: 500.ms,
-                                begin: 0.2,
-                                curve: Curves.easeOutCubic,
+    return Scaffold(
+      // Use a Stack to overlay the FloatingActionButton
+      body: GetBuilder<HomeController>(
+        builder: (_) => MyWidgetsAnimator(
+          apiCallStatus: controller.apiCallStatus,
+          loadingWidget: () => const HomeShimmer(),
+          errorWidget: () => ApiErrorWidget(
+            retryAction: () => controller.refreshAllData(),
+          ),
+          successWidget: () => Stack(
+            children: [
+              CustomScrollView(
+                slivers: [
+                  SliverPersistentHeader(
+                    delegate: _HomeAppBar(),
+                    pinned: true,
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.w),
+                      child: Column(
+                        children: [
+                          24.verticalSpace,
+                          SizedBox(
+                            height: 190.h,
+                            child: CarouselSlider.builder(
+                              options: CarouselOptions(
+                                enableInfiniteScroll: false,
+                                viewportFraction: 1.0,
+                                enlargeCenterPage: false,
+                                onPageChanged: controller.onCardSlided,
                               ),
-                        ),
-                        16.verticalSpace,
-                        GetBuilder<HomeController>(
-                          id: controller.dotIndicatorsId,
-                          builder: (_) => AnimatedSmoothIndicator(
-                            activeIndex: controller.activeIndex,
-                            count: 3,
-                            effect: WormEffect(
-                              activeDotColor: context.theme.primaryColor,
-                              dotColor: context.theme.colorScheme.surface,
-                              dotWidth: 10.w,
-                              dotHeight: 10.h,
+                              itemCount: controller.weatherCards.length,
+                              itemBuilder: (context, itemIndex, pageViewIndex) {
+                                final weather = controller.weatherCards[itemIndex];
+                                return weather == null
+                                    ? Center(child: CircularProgressIndicator(color: theme.primaryColor))
+                                    : WeatherCard(
+                                        weather: weather,
+                                        cardIndex: itemIndex,
+                                        showEditButton: itemIndex > 0,
+                                      );
+                              },
+                            ).animate().fade(duration: 400.ms).slideY(
+                                  duration: 500.ms,
+                                  begin: 0.2,
+                                  curve: Curves.easeOutCubic,
+                                ),
+                          ),
+                          16.verticalSpace,
+                          GetBuilder<HomeController>(
+                            id: controller.dotIndicatorsId,
+                            builder: (_) => AnimatedSmoothIndicator(
+                              activeIndex: controller.activeIndex,
+                              count: controller.weatherCards.length,
+                              effect: WormEffect(
+                                activeDotColor: theme.primaryColor,
+                                dotColor: theme.colorScheme.surface,
+                                dotWidth: 10.w,
+                                dotHeight: 10.h,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-
-                // ✨ ENHANCEMENT: Sliver wrapper for the section header
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 26.w, vertical: 24.h),
-                    child: Text(
-                      Strings.aroundTheWorld.tr,
-                      style: context.theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-                    ).animate().fade(delay: 200.ms).slideX(
-                          duration: 400.ms,
-                          begin: -0.5,
-                          curve: Curves.easeOutCubic,
-                        ),
+                  // "Around the World" Section Header with Edit Button
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(26.w, 24.h, 16.w, 12.h),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            Strings.aroundTheWorld.tr,
+                            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                          ).animate().fade(delay: 200.ms).slideX(
+                                duration: 400.ms,
+                                begin: -0.5,
+                                curve: Curves.easeOutCubic,
+                              ),
+                          Obx(
+                            () => TextButton(
+                              onPressed: controller.toggleWorldListEditing,
+                              child: Text(controller.isEditingWorldList.isTrue ? 'Done' : 'Edit'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-
-                // ✨ ENHANCEMENT: Use SliverList for the list of other cities
-                SliverPadding(
-                  padding: EdgeInsets.symmetric(horizontal: 26.w),
-                  sliver: SliverList.separated(
-                    itemCount: controller.weatherArroundTheWorld.length,
-                    separatorBuilder: (context, index) => 16.verticalSpace,
-                    itemBuilder: (context, index) =>
-                        // ✨ USE NEW WIDGET: CompactWeatherListTile
-                        CompactWeatherListTile(
-                      weather: controller.weatherArroundTheWorld[index],
-                    ).animate(delay: (100 * index).ms).fade(duration: 400.ms).slideY(
-                          duration: 400.ms,
-                          begin: 0.5,
-                          curve: Curves.easeOutCubic,
-                        ),
+                  // The "Around the World" List
+                  Obx(
+                    () => _buildWorldList(context, controller.isEditingWorldList.value),
                   ),
+                  SliverToBoxAdapter(child: 60.verticalSpace), // Space for FAB
+                ],
+              ),
+              // Floating Action Button for adding cities
+              Obx(
+                () => AnimatedPositioned(
+                  duration: 300.ms,
+                  curve: Curves.easeInOutCubic,
+                  bottom: controller.isEditingWorldList.isTrue ? -100 : 20.h,
+                  right: 20.w,
+                  child: FloatingActionButton(
+                    onPressed: controller.onAddCityPressed,
+                    backgroundColor: theme.primaryColor,
+                    child: const Icon(Icons.add, color: Colors.white),
+                  ).animate(
+                    target: controller.isEditingWorldList.isTrue ? 0 : 1,
+                  ).scale(end: const Offset(1.1, 1.1)).then().scale(end: const Offset(1/1.1, 1/1.1)),
                 ),
-                SliverToBoxAdapter(child: 24.verticalSpace),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+
+  // Helper widget to build the appropriate list based on editing state
+  Widget _buildWorldList(BuildContext context, bool isEditing) {
+    if (isEditing) {
+      // Use ReorderableListView inside a SliverToBoxAdapter for drag-and-drop
+      return SliverToBoxAdapter(
+        child: ReorderableListView.builder(
+          shrinkWrap: true,
+          primary: false,
+          padding: EdgeInsets.symmetric(horizontal: 26.w),
+          itemCount: controller.weatherAroundTheWorld.length,
+          itemBuilder: (context, index) {
+            final weather = controller.weatherAroundTheWorld[index];
+            return Padding(
+              key: ValueKey(weather.location.name),
+              padding: EdgeInsets.symmetric(vertical: 8.h),
+              child: CompactWeatherListTile(
+                weather: weather,
+                isEditing: true,
+                index: index,
+              ),
+            );
+          },
+          onReorder: controller.reorderWorldList,
+        ),
+      );
+    } else {
+      // Use standard SliverList for display mode
+      return SliverPadding(
+        padding: EdgeInsets.symmetric(horizontal: 26.w),
+        sliver: SliverList.separated(
+          itemCount: controller.weatherAroundTheWorld.length,
+          separatorBuilder: (context, index) => 16.verticalSpace,
+          itemBuilder: (context, index) => CompactWeatherListTile(
+            weather: controller.weatherAroundTheWorld[index],
+            isEditing: false,
+            index: index,
+          ).animate(delay: (100 * index).ms).fade(duration: 400.ms).slideY(
+                duration: 400.ms,
+                begin: 0.5,
+                curve: Curves.easeOutCubic,
+              ),
+        ),
+      );
+    }
+  }
 }
 
-// ✨ ENHANCEMENT: Extracted the app bar into a SliverPersistentHeaderDelegate
+
+// _HomeAppBar remains unchanged
 class _HomeAppBar extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
@@ -197,10 +256,8 @@ class _HomeAppBar extends SliverPersistentHeaderDelegate {
 
   @override
   double get maxExtent => 80.h;
-
   @override
   double get minExtent => 80.h;
-
   @override
   bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) => true;
 }

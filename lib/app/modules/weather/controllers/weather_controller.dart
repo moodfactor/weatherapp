@@ -38,13 +38,15 @@ class WeatherController extends GetxController {
   // for weather slider and dot indicator
   var currentPage = 0;
 
-  @override
-  void onInit() async {
-    pageController = PageController(
-      initialPage: currentPage, viewportFraction: 0.8,
-    );
-    super.onInit();
-  }
+@override
+void onInit() {
+  pageController = PageController(
+    initialPage: currentPage,
+    // ✨ ENHANCEMENT: Slightly larger fraction for a more focused look
+    viewportFraction: 0.85,
+  );
+  super.onInit();
+}
   
   @override
   void onReady() {

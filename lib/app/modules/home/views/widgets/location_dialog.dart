@@ -17,9 +17,7 @@ class LocationDialog extends StatelessWidget {
     return Dialog(
       backgroundColor: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(
-          Radius.circular(30.r),
-        ),
+        borderRadius: BorderRadius.all(Radius.circular(30.r)),
       ),
       insetPadding: EdgeInsets.symmetric(horizontal: 26.w),
       child: Container(
@@ -66,7 +64,8 @@ class LocationDialog extends StatelessWidget {
             CustomButton(
               onPressed: () {
                 Get.back();
-                HomeController.instance.getUserLocation();
+                // ✨ ENHANCEMENT: Refresh all data after allowing location
+                HomeController.instance.refreshAllData();
               },
               text: Strings.allowLocation.tr,
               fontSize: 18.sp,
