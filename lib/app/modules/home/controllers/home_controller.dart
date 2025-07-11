@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'dart:async';
 // ✨ FIX: Added missing import for CarouselPageChangedReason
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:weatherapp/app/modules/home/views/widgets/add_city_dialog.dart';
 
 import '../../../../config/theme/my_theme.dart';
 import '../../../../config/translations/localization_service.dart';
@@ -21,6 +22,7 @@ class HomeController extends GetxController {
 
   var currentLanguage = LocalizationService.getCurrentLocal().languageCode;
   final currentTime = ''.obs;
+  List<String> worldCityNames = [];
 
   // Carousel Cards
   // Card 0: User Location, Card 1: Custom City 1, Card 2: Custom City 2
@@ -76,7 +78,8 @@ class HomeController extends GetxController {
       update();
       return;
     }
-    final userLocationString = '${locationData.latitude},${locationData.longitude}';
+    final userLocationString =
+        '${locationData.latitude},${locationData.longitude}';
 
     // Fetch all data points.
     // The Future.wait approach was good but requires changing BaseClient.
@@ -182,22 +185,45 @@ class HomeController extends GetxController {
     isEditingWorldList.value = !isEditingWorldList.value;
   }
 
+      void removeCityFromWorldList(int index) {
+      if (index >= 0 && index < weatherAroundTheWorld.length) {
+        weatherAroundTheWorld.removeAt(index);
+        update(); // Notify listeners to refresh the UI
+      }
+    }
+
+
+    void reorderWorldList(int oldIndex, int newIndex) {
+      if (oldIndex < newIndex) {
+        newIndex -= 1;
+      }
+      final WeatherModel item = weatherAroundTheWorld.removeAt(oldIndex);
+      weatherAroundTheWorld.insert(newIndex, item);
+    }
+
   // Callback when add city button is pressed
   void onAddCityPressed() {
     // Logic to handle adding a new city
+    Get.dialog(const AddCityDialog());
   }
 
-  // Reorder the world weather list
-  void reorderWorldList(int oldIndex, int newIndex) {
-    if (oldIndex < newIndex) {
-      newIndex -= 1;
+  Future<void> addCityToWorldList(String cityName) async {
+    final trimmedCity = cityName.trim();
+    if (trimmedCity.isEmpty ||
+        worldCityNames.any(
+          (c) => c.toLowerCase() == trimmedCity.toLowerCase(),
+        )) {
+      Get.snackbar(
+        'Error',
+        'City name cannot be empty or a duplicate.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
     }
-    final WeatherModel item = weatherAroundTheWorld.removeAt(oldIndex);
-    weatherAroundTheWorld.insert(newIndex, item);
-  }
 
-  // Remove a city from the world weather list
-  void removeCityFromWorldList(int index) {
-    weatherAroundTheWorld.removeAt(index);
+    // Reorder the world weather list
+
+    // Removes a city from the weatherAroundTheWorld list.
+
   }
 }

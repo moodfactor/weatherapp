@@ -23,7 +23,7 @@ class WeatherController extends GetxController {
 
   // for update
   final dotIndicatorsId = 'DotIndicators';
-  
+
   // for weather forecast
   final days = 3;
   //var selectedDay = 'Today';
@@ -34,20 +34,20 @@ class WeatherController extends GetxController {
 
   // for weather card slider
   late PageController pageController;
-  
+
   // for weather slider and dot indicator
   var currentPage = 0;
 
-@override
-void onInit() {
-  pageController = PageController(
-    initialPage: currentPage,
-    // ✨ ENHANCEMENT: Slightly larger fraction for a more focused look
-    viewportFraction: 0.85,
-  );
-  super.onInit();
-}
-  
+  @override
+  void onInit() {
+    pageController = PageController(
+      initialPage: currentPage,
+      // Change viewport fraction to show more of the adjacent cards
+      viewportFraction: 0.8,
+    );
+    super.onInit();
+  }
+
   @override
   void onReady() {
     getWeatherDetails();
@@ -73,7 +73,8 @@ void onInit() {
         RequestType.get,
         queryParameters: {
           Constants.key: Constants.apiKey,
-          Constants.q: '${weatherModel.location.lat},${weatherModel.location.lon}',
+          Constants.q:
+              '${weatherModel.location.lat},${weatherModel.location.lon}',
           Constants.days: days,
           Constants.lang: currentLanguage,
         },
@@ -99,9 +100,11 @@ void onInit() {
   /// when the user change the selected day
   onDaySelected(String day) {
     selectedDay = day;
-    var index = weatherDetails?.forecast?.forecastday?.indexWhere((fd) {
-      return fd.date.convertToDay() == day;
-    }) ?? -1;
+    var index =
+        weatherDetails?.forecast?.forecastday?.indexWhere((fd) {
+          return fd.date.convertToDay() == day;
+        }) ??
+        -1;
 
     if (index >= 0) {
       pageController.animateToPage(
@@ -115,7 +118,8 @@ void onInit() {
 
   /// when the user slide the weather card
   onCardSlided(int index) {
-    if (index >= 0 && index < (weatherDetails?.forecast?.forecastday?.length ?? 0)) {
+    if (index >= 0 &&
+        index < (weatherDetails?.forecast?.forecastday?.length ?? 0)) {
       forecastday = weatherDetails?.forecast?.forecastday?[index];
       selectedDay = forecastday?.date.convertToDay() ?? selectedDay;
       currentPage = index;

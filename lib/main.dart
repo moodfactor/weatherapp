@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:weatherapp/app/services/background_video_service.dart'; 
 
 import 'app/data/local/my_shared_pref.dart';
 import 'app/modules/splash/bindings/splash_binding.dart';
@@ -15,6 +16,9 @@ void main() async {
 
   // init shared preference
   await MySharedPref.init();
+
+  await initServices();
+
   
   // init date format language
   await initializeDateFormatting(
@@ -53,4 +57,15 @@ void main() async {
       },
     ),
   );
+}
+
+// ✨ CREATE this helper function to initialize services
+Future<void> initServices() async {
+  print("Initializing services...");
+  await Get.putAsync(() async {
+    final service = BackgroundVideoService();
+    await service.init();
+    return service;
+  });
+  print("Services initialized!");
 }
