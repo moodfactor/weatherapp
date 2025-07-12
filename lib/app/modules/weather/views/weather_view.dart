@@ -10,6 +10,7 @@ import 'package:weatherapp/utils/extensions.dart';
 
 import '../../../components/api_error_widget.dart';
 import '../../../components/my_widgets_animator.dart';
+import '../../splash/views/loading_view.dart';
 import '../controllers/weather_controller.dart';
 import 'widgets/data_pod.dart';
 import 'widgets/futuristic_details_card.dart';
@@ -27,7 +28,7 @@ class WeatherView extends GetView<WeatherController> {
       body: GetBuilder<WeatherController>(
         builder: (_) => MyWidgetsAnimator(
           apiCallStatus: controller.apiCallStatus,
-          loadingWidget: () => Center(child: CircularProgressIndicator(color: theme.primaryColor)),
+          loadingWidget: () => const LoadingView(),
           errorWidget: () => ApiErrorWidget(
             retryAction: () => controller.getWeatherDetails(),
           ),

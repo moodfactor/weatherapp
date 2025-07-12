@@ -14,7 +14,7 @@ import '../../../components/api_error_widget.dart';
 import '../controllers/home_controller.dart';
 import 'widgets/futuristic_compact_tile.dart';
 import 'widgets/futuristic_weather_card.dart';
-import 'widgets/home_shimmer.dart';
+import '../../splash/views/loading_view.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({Key? key}) : super(key: key);
@@ -29,7 +29,7 @@ class HomeView extends GetView<HomeController> {
       body: GetBuilder<HomeController>(
         builder: (_) => MyWidgetsAnimator(
           apiCallStatus: controller.apiCallStatus,
-          loadingWidget: () => const HomeShimmer(), // You may want to design a futuristic shimmer too
+          loadingWidget: () => const LoadingView(),
           errorWidget: () => ApiErrorWidget(
             retryAction: () => controller.refreshAllData(),
           ),
@@ -81,7 +81,7 @@ class HomeView extends GetView<HomeController> {
                         itemBuilder: (context, itemIndex, pageViewIndex) {
                           final weather = controller.weatherCards[itemIndex];
                           return weather == null
-                              ? const Center(child: CircularProgressIndicator())
+                              ? const LoadingView()
                               : FuturisticWeatherCard(
                                   weather: weather,
                                   cardIndex: itemIndex,
