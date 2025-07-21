@@ -16,7 +16,7 @@ class Constants {
   static const lang = 'lang';
 
   // assets
-  static const logo = 'assets/images/app_icon.png';
+  static const logo = 'assets/images/app_icon_foreground.png';
   static const welcome = 'assets/images/welcome.png';
   static const world = 'assets/images/world.png';
   static const world2 = 'assets/images/world2.png';
