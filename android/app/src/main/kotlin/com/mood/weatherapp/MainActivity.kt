@@ -1,4 +1,4 @@
-package com.mood.weatherapp
+package com.mood.weatherly
 
 import io.flutter.embedding.android.FlutterActivity
 
